@@ -8,6 +8,6 @@ export function SyncBadge() {
   if (s.pending === 0) return <Badge label="همه صداها امن ذخیره شده‌اند" tone="success" icon="shield-checkmark" />;
   if (!s.online) return <Badge label={`بدون اینترنت · در صف آپلود: ${toFa(s.pending)}`} tone="warning" icon="cloud-offline-outline" />;
   if (s.uploading) return <Badge label={`در حال آپلود · در صف: ${toFa(s.pending)}`} tone="accent" icon="cloud-upload" />;
-  if (s.serverReachable === false) return <Badge label={`سرور در دسترس نیست · در صف: ${toFa(s.pending)}`} tone="warning" icon="cloud-offline-outline" />;
+  if (s.serverReachable === false) return <Badge label={`اتصال برقرار نیست · در صف: ${toFa(s.pending)}`} tone="warning" icon="cloud-offline-outline" />;
   return <Badge label={`در صف آپلود: ${toFa(s.pending)}`} tone="warning" icon="time-outline" />;
 }

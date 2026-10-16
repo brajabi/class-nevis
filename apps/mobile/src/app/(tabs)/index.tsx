@@ -299,7 +299,7 @@ export default function RecordScreen() {
           {active ? (
             <Text variant="caption" color={colors.textFaint}>
               {`در حال ضبط بخش ${toFa(rec.segmentIndex + 1)} · هر بخش حداکثر ۲ دقیقه`}
-              {activeLocal ? ` · ${toFa(activeLocal.segments.filter((s) => s.uploaded).length)} بخش به سرور رسیده` : ''}
+              {activeLocal ? ` · ${toFa(activeLocal.segments.filter((s) => s.uploaded).length)} بخش به فضای ابری رسیده` : ''}
             </Text>
           ) : null}
           {active && !rec.backgroundRecording ? (

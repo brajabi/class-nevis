@@ -161,7 +161,7 @@ export default function NotesScreen() {
         <Animated.View entering={FadeIn} style={styles.offlineBar}>
           <Ionicons name="cloud-offline-outline" size={16} color={colors.warning} />
           <Text variant="caption" color={colors.warning} style={{ flex: 1 }}>
-            اتصال به سرور قطع است؛ فهرست ممکن است قدیمی باشد.
+            اتصال برقرار نیست؛ فهرست ممکن است قدیمی باشد.
           </Text>
           <Tap onPress={() => load('refresh')}>
             <Text variant="caption" color={colors.text} style={{ fontFamily: fonts.bold }}>

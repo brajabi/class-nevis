@@ -1,6 +1,6 @@
 import { File } from 'expo-file-system';
 
-import { getSettings } from './settings';
+import { getSettings, SERVER_URL } from './settings';
 import type {
   ModelDTO,
   NoteDTO,
@@ -22,7 +22,7 @@ export class ApiError extends Error {
 }
 
 function base() {
-  return getSettings().serverUrl.replace(/\/+$/, '');
+  return SERVER_URL;
 }
 
 function aiHeaders(): Record<string, string> {
@@ -53,9 +53,9 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 3000
     return body as T;
   } catch (e: any) {
     if (e instanceof ApiError) throw e;
-    if (e?.name === 'AbortError') throw new ApiError('زمان اتصال به سرور تمام شد', 0, null);
+    if (e?.name === 'AbortError') throw new ApiError('پاسخی دریافت نشد؛ دوباره تلاش کنید', 0, null);
     if (__DEV__) console.warn('[api] network error', path, e?.message ?? e);
-    throw new ApiError('اتصال به سرور برقرار نشد', 0, null);
+    throw new ApiError('اتصال به اینترنت یا کلاس‌نویس برقرار نشد', 0, null);
   } finally {
     clearTimeout(timer);
   }

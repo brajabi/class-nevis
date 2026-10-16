@@ -222,7 +222,7 @@ export default function NoteEditorScreen() {
         setInitialHtml(draft.html);
         setStatus('error');
         schedule(retryDelay.current);
-        showToast('سرور در دسترس نیست؛ پیش‌نویس محلی باز شد', 'info');
+        showToast('اتصال برقرار نیست؛ پیش‌نویس محلی باز شد', 'info');
       } else {
         setLoadError(errMsg(e));
       }
@@ -291,7 +291,7 @@ export default function NoteEditorScreen() {
     const saved = await flush();
     if (!saved) {
       setBusy(null);
-      showToast('ابتدا باید تغییرات ذخیره شوند؛ اتصال به سرور را بررسی کنید', 'error');
+      showToast('ابتدا باید تغییرات ذخیره شوند؛ اتصال اینترنت را بررسی کنید', 'error');
       return;
     }
     try {

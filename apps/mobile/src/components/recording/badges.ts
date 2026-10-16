@@ -36,7 +36,7 @@ export function recordingBadges(local: LocalRecording | undefined, server: Recor
     else if (n > 0 && done < n) out.push({ label: `در حال رونویسی ${toFa(done)}/${toFa(n)}`, tone: 'accent', icon: 'sparkles-outline' });
     else if (n > 0 && done === n) out.push({ label: 'رونویسی شد', tone: 'success', icon: 'checkmark-done' });
     if (server.noteIds.length > 0) out.push({ label: 'جزوه دارد', tone: 'primary', icon: 'document-text' });
-    if (!local) out.push({ label: 'فقط روی سرور', tone: 'neutral', icon: 'cloud-outline' });
+    if (!local) out.push({ label: 'فقط در فضای ابری', tone: 'neutral', icon: 'cloud-outline' });
   }
   return out;
 }

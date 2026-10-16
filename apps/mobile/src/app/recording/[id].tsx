@@ -143,7 +143,7 @@ export default function RecordingDetailScreen() {
       return false;
     }
     if (loadState !== 'ok' && !detail) {
-      Alert.alert('سرور در دسترس نیست', 'این ضبط هنوز به سرور نرسیده یا اتصال برقرار نیست. بعد از آپلود دوباره امتحان کنید.');
+      Alert.alert('اتصال برقرار نیست', 'این ضبط هنوز به فضای ابری نرسیده یا اتصال برقرار نیست. بعد از آپلود دوباره امتحان کنید.');
       requestSync({ resetBackoff: true });
       return false;
     }
@@ -231,8 +231,8 @@ export default function RecordingDetailScreen() {
       localPending > 0
         ? `هشدار: ${toFa(localPending)} بخش از صدای این کلاس هنوز آپلود نشده و فقط روی همین گوشی وجود دارد. با حذف، این صدا برای همیشه از بین می‌رود و قابل بازگشت نیست.`
         : local
-          ? 'این ضبط و متن آن از گوشی و سرور برای همیشه حذف می‌شود. این کار قابل بازگشت نیست.'
-          : 'نسخه سرور این ضبط و متن آن برای همیشه حذف می‌شود. این کار قابل بازگشت نیست.';
+          ? 'این ضبط و متن آن از گوشی و فضای ابری برای همیشه حذف می‌شود. این کار قابل بازگشت نیست.'
+          : 'نسخه ابری این ضبط و متن آن برای همیشه حذف می‌شود. این کار قابل بازگشت نیست.';
     const ok = await confirm(localPending > 0 ? 'صدا برای همیشه پاک می‌شود!' : 'حذف ضبط؟', msg, localPending > 0 ? 'حذف برای همیشه' : 'حذف', true);
     if (!ok) return;
     if (localPending > 0) {
@@ -249,8 +249,8 @@ export default function RecordingDetailScreen() {
           if (!(e instanceof ApiError && e.status === 404)) {
             if (!local) throw e;
             const onlyLocal = await confirm(
-              'سرور در دسترس نیست',
-              'نسخه سرور فعلاً حذف نشد. فقط از گوشی حذف شود؟ (نسخه سرور باقی می‌ماند و بعداً می‌توانید آن را از همین صفحه حذف کنید.)',
+              'اتصال برقرار نیست',
+              'نسخه ابری فعلاً حذف نشد. فقط از گوشی حذف شود؟ (نسخه ابری باقی می‌ماند و بعداً می‌توانید آن را از همین صفحه حذف کنید.)',
               'فقط از گوشی',
               true,
             );
@@ -297,7 +297,7 @@ export default function RecordingDetailScreen() {
         <View style={styles.center}>
           <Ionicons name={loadState === 'offline' ? 'cloud-offline-outline' : 'help-circle-outline'} size={48} color={colors.textFaint} />
           <Text variant="heading" style={{ textAlign: 'center' }}>
-            {loadState === 'offline' ? 'اتصال به سرور برقرار نشد' : 'این ضبط پیدا نشد'}
+            {loadState === 'offline' ? 'اتصال برقرار نشد' : 'این ضبط پیدا نشد'}
           </Text>
           <Button title="تلاش دوباره" icon="refresh" variant="secondary" onPress={load} />
         </View>
@@ -336,7 +336,7 @@ export default function RecordingDetailScreen() {
                 <Text variant="label">
                   {localPending
                     ? `${toFa(uploaded)} از ${toFa(local.segments.length)} بخش آپلود شده`
-                    : 'همه بخش‌ها روی گوشی و سرور ذخیره شده‌اند'}
+                    : 'همه بخش‌ها روی گوشی و فضای ابری ذخیره شده‌اند'}
                 </Text>
                 <Text variant="caption" color={colors.textMuted}>
                   {localPending
@@ -387,7 +387,7 @@ export default function RecordingDetailScreen() {
               <Ionicons name={loadState === 'offline' ? 'cloud-offline-outline' : 'hourglass-outline'} size={28} color={colors.textFaint} />
               <Text variant="label" color={colors.textMuted} style={{ textAlign: 'center' }}>
                 {loadState === 'offline'
-                  ? 'اتصال به سرور برقرار نیست؛ متن کلاس بعد از اتصال نمایش داده می‌شود.'
+                  ? 'اتصال برقرار نیست؛ متن کلاس بعد از اتصال نمایش داده می‌شود.'
                   : 'متن کلاس بعد از آپلود اولین بخش، اینجا ظاهر می‌شود.'}
               </Text>
             </Card>

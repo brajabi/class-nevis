@@ -1,28 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
 import { useSyncExternalStore } from 'react';
 
 export interface Settings {
-  serverUrl: string;
   transcribeModel: string;
   noteModel: string;
 }
 
 const KEY = 'classnevis.settings.v1';
 
-/** In development, the API runs on the same machine as Metro, so reuse Metro's host. */
-function defaultServerUrl() {
-  // set at build time for release APKs, e.g. EXPO_PUBLIC_API_URL=http://192.168.1.10:4000
-  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
-  if (fromEnv) return fromEnv;
-  const host = Constants.expoConfig?.hostUri?.split(':')[0];
-  if (__DEV__ && host) return `http://${host}:4000`;
-  return Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000';
-}
+/**
+ * The ClassNevis server. Fixed in the app (users never see or type it);
+ * override at build/dev time with EXPO_PUBLIC_API_URL, e.g. http://192.168.1.10:4000.
+ */
+export const SERVER_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://classnevis.tarino.net').replace(/\/+$/, '');
 
 export const defaultSettings: Settings = {
-  serverUrl: defaultServerUrl(),
   transcribeModel: '',
   noteModel: '',
 };
@@ -35,7 +27,10 @@ export async function loadSettings(): Promise<Settings> {
   if (loaded) return current;
   try {
     const raw = await AsyncStorage.getItem(KEY);
-    if (raw) current = { ...defaultSettings, ...JSON.parse(raw) };
+    if (raw) {
+      const { transcribeModel, noteModel } = JSON.parse(raw);
+      current = { ...defaultSettings, ...(transcribeModel ? { transcribeModel } : {}), ...(noteModel ? { noteModel } : {}) };
+    }
   } catch {}
   loaded = true;
   listeners.forEach((l) => l());

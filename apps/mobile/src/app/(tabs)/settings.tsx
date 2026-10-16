@@ -14,10 +14,10 @@ type Health = { state: 'idle' | 'checking' | 'ok' | 'error'; message?: string; a
 
 export default function SettingsScreen() {
   const settings = useSettings();
-  const [url, setUrl] = useState(settings.serverUrl);
   const [health, setHealth] = useState<Health>({ state: 'idle' });
   const [models, setModels] = useState<ModelDTO[] | null>(null);
   const [picker, setPicker] = useState<null | 'transcribeModel' | 'noteModel'>(null);
+  const [advanced, setAdvanced] = useState(false);
 
   const check = useCallback(async () => {
     setHealth({ state: 'checking' });
@@ -31,62 +31,41 @@ export default function SettingsScreen() {
   }, []);
 
   useEffect(() => {
-    setUrl(settings.serverUrl);
     check();
-  }, [check, settings.serverUrl]);
+  }, [check]);
 
-  const saveUrl = async () => {
-    const clean = url.trim().replace(/\/+$/, '');
-    if (clean && clean !== settings.serverUrl) await updateSettings({ serverUrl: clean });
-    else check();
-  };
+  const status =
+    health.state === 'error'
+      ? { icon: 'cloud-offline-outline' as const, color: colors.warning, bg: colors.warningSoft, title: 'اتصال برقرار نیست', text: 'اینترنت گوشی را بررسی کنید. صداها روی گوشی امن می‌مانند و بعد از وصل شدن خودکار ارسال می‌شوند.' }
+      : health.state === 'ok' && health.ai === false
+        ? { icon: 'hourglass-outline' as const, color: colors.warning, bg: colors.warningSoft, title: 'رونویسی موقتاً در دسترس نیست', text: 'صداها ذخیره می‌شوند و به‌زودی خودکار به متن تبدیل می‌شوند.' }
+        : health.state === 'ok'
+          ? { icon: 'checkmark-circle' as const, color: colors.success, bg: colors.successSoft, title: 'همه‌چیز آماده است', text: 'کلاس‌نویس وصل است؛ صداها خودکار به متن و جزوه تبدیل می‌شوند.' }
+          : { icon: 'sync-outline' as const, color: colors.textMuted, bg: colors.surfaceHigh, title: 'در حال بررسی اتصال...', text: '' };
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ paddingBottom: 130 }} keyboardShouldPersistTaps="handled">
-        <Header title="تنظیمات" subtitle="اتصال به سرور و انتخاب مدل‌های هوش مصنوعی" />
+        <Header title="تنظیمات" />
 
         <View style={styles.section}>
           <Card index={0}>
-            <View style={styles.rowBetween}>
-              <Text variant="heading">سرور کلاس‌نویس</Text>
-              <HealthBadge health={health} />
+            <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
+              <View style={[styles.shield, { backgroundColor: status.bg }]}>
+                <Ionicons name={status.icon} size={22} color={status.color} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text variant="heading">{status.title}</Text>
+                {status.text ? (
+                  <Text variant="caption" color={colors.textMuted}>
+                    {status.text}
+                  </Text>
+                ) : null}
+              </View>
             </View>
-            <Text variant="caption" color={colors.textMuted} style={{ marginTop: 4, marginBottom: space.md }}>
-              آدرس سرور بک‌اند (برای شبیه‌ساز اندروید 10.0.2.2 و برای گوشی واقعی IP کامپیوتر در شبکه)
-            </Text>
-            <TextInput
-              value={url}
-              onChangeText={setUrl}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              placeholder="http://192.168.1.10:4000"
-              placeholderTextColor={colors.textFaint}
-              style={[inputStyle, { textAlign: 'left', writingDirection: 'ltr' }]}
-              onSubmitEditing={saveUrl}
-            />
-            <Button title="ذخیره و بررسی اتصال" icon="pulse" onPress={saveUrl} loading={health.state === 'checking'} style={{ marginTop: space.md }} />
-            {health.state === 'ok' && health.ai === false ? (
-              <Animated.View entering={FadeIn} style={styles.warn}>
-                <Ionicons name="key-outline" size={18} color={colors.warning} />
-                <Text variant="caption" color={colors.warning} style={{ flex: 1 }}>
-                  کلید OpenRouter روی سرور تنظیم نشده است. صداها ذخیره می‌شوند و بعد از تنظیم کلید رونویسی می‌شوند.
-                </Text>
-              </Animated.View>
+            {health.state === 'error' ? (
+              <Button title="تلاش دوباره" icon="refresh" variant="secondary" size="sm" onPress={check} style={{ marginTop: space.md }} />
             ) : null}
-          </Card>
-        </View>
-
-        <View style={styles.section}>
-          <Card index={1}>
-            <Text variant="heading">مدل‌های هوش مصنوعی (OpenRouter)</Text>
-            <Text variant="caption" color={colors.textMuted} style={{ marginTop: 4, marginBottom: space.md }}>
-              خالی بگذارید تا از مدل پیش‌فرض سرور استفاده شود.
-            </Text>
-            <ModelRow label="مدل رونویسی صوت" icon="mic-outline" value={settings.transcribeModel} onPress={() => setPicker('transcribeModel')} />
-            <View style={{ height: space.sm }} />
-            <ModelRow label="مدل نوشتن جزوه" icon="sparkles-outline" value={settings.noteModel} onPress={() => setPicker('noteModel')} />
           </Card>
         </View>
 
@@ -100,11 +79,29 @@ export default function SettingsScreen() {
                 <Text variant="heading">صداهای شما امن هستند</Text>
                 <Text variant="caption" color={colors.textMuted} style={{ marginTop: 4 }}>
                   هر کلاس در بخش‌های کوتاه ضبط و بلافاصله در حافظه‌ی گوشی ذخیره می‌شود. حتی اگر برنامه بسته شود یا اینترنت قطع باشد، صدا از بین نمی‌رود و
-                  در اولین فرصت به سرور ارسال می‌شود. فایل‌ها فقط با حذف دستی شما پاک می‌شوند.
+                  در اولین فرصت ارسال می‌شود. فایل‌ها فقط با حذف دستی شما پاک می‌شوند.
                 </Text>
               </View>
             </View>
           </Card>
+        </View>
+
+        <View style={styles.section}>
+          <Tap onPress={() => setAdvanced((v) => !v)}>
+            <View style={styles.advancedHead}>
+              <Ionicons name="options-outline" size={18} color={colors.textMuted} />
+              <Text variant="label" color={colors.textMuted} style={{ flex: 1 }}>
+                تنظیمات پیشرفته
+              </Text>
+              <Ionicons name={advanced ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textFaint} />
+            </View>
+          </Tap>
+          {advanced ? (
+            <Animated.View entering={FadeIn} style={{ gap: space.sm, marginTop: space.sm }}>
+              <ModelRow label="هوش مصنوعی تبدیل صدا به متن" icon="mic-outline" value={settings.transcribeModel} onPress={() => setPicker('transcribeModel')} />
+              <ModelRow label="هوش مصنوعی نوشتن جزوه" icon="sparkles-outline" value={settings.noteModel} onPress={() => setPicker('noteModel')} />
+            </Animated.View>
+          ) : null}
         </View>
 
         <Text variant="caption" color={colors.textFaint} style={{ textAlign: 'center', marginTop: space.lg }}>
@@ -114,7 +111,7 @@ export default function SettingsScreen() {
 
       <ModelPicker
         visible={picker !== null}
-        title={picker === 'transcribeModel' ? 'مدل رونویسی (فقط مدل‌های صوتی)' : 'مدل نوشتن جزوه'}
+        title={picker === 'transcribeModel' ? 'تبدیل صدا به متن' : 'نوشتن جزوه'}
         audioOnly={picker === 'transcribeModel'}
         models={models}
         selected={picker ? settings[picker] : ''}
@@ -128,13 +125,6 @@ export default function SettingsScreen() {
   );
 }
 
-function HealthBadge({ health }: { health: Health }) {
-  if (health.state === 'checking') return <Badge label="در حال بررسی" tone="neutral" icon="sync" />;
-  if (health.state === 'ok') return <Badge label="متصل" tone="success" icon="checkmark-circle" />;
-  if (health.state === 'error') return <Badge label="قطع" tone="danger" icon="close-circle" />;
-  return null;
-}
-
 function ModelRow({ label, value, icon, onPress }: { label: string; value: string; icon: any; onPress: () => void }) {
   return (
     <Tap onPress={onPress}>
@@ -143,7 +133,7 @@ function ModelRow({ label, value, icon, onPress }: { label: string; value: strin
         <View style={{ flex: 1 }}>
           <Text variant="label">{label}</Text>
           <Text variant="caption" color={value ? colors.accent : colors.textFaint} numberOfLines={1} style={{ writingDirection: 'ltr', textAlign: 'right' }}>
-            {value || 'پیش‌فرض سرور'}
+            {value || 'پیشنهادی'}
           </Text>
         </View>
         <Ionicons name="chevron-back" size={18} color={colors.textFaint} />
@@ -197,12 +187,12 @@ function ModelPicker({
           />
           <Tap onPress={() => onSelect('')}>
             <View style={[styles.modelItem, !selected && styles.modelItemActive]}>
-              <Text variant="label">پیش‌فرض سرور</Text>
+              <Text variant="label">پیشنهادی (توصیه می‌شود)</Text>
             </View>
           </Tap>
           {models === null ? (
             <Text variant="body" color={colors.textMuted} style={{ textAlign: 'center', marginTop: space.xl }}>
-              برای دیدن مدل‌ها ابتدا به سرور متصل شوید.
+              برای دیدن فهرست، اتصال اینترنت لازم است.
             </Text>
           ) : (
             <FlatList
@@ -239,8 +229,6 @@ function ModelPicker({
 
 const styles = StyleSheet.create({
   section: { paddingHorizontal: space.xl, marginTop: space.md },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  warn: { flexDirection: 'row', gap: 8, marginTop: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: colors.warningSoft },
   modelRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -248,6 +236,15 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  advancedHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
   },

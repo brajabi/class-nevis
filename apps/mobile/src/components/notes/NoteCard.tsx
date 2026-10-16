@@ -91,12 +91,12 @@ export function ErrorCard({ message, onRetry, loading }: { message: string; onRe
           <Ionicons name="cloud-offline-outline" size={30} color={colors.danger} />
         </View>
         <Text variant="heading" style={{ textAlign: 'center' }}>
-          ارتباط با سرور برقرار نشد
+          اتصال برقرار نشد
         </Text>
         <Text variant="body" color={colors.textMuted} style={{ textAlign: 'center', fontSize: 14 }}>
           {message}
           {'\n'}
-          مطمئن شوید سرور روشن است و آدرس آن در تنظیمات درست وارد شده.
+          اینترنت گوشی را بررسی کنید و دوباره تلاش کنید.
         </Text>
         <Button title="تلاش دوباره" icon="refresh" onPress={onRetry} loading={loading} variant="secondary" style={{ alignSelf: 'stretch' }} />
       </LinearGradient>

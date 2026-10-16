@@ -24,7 +24,7 @@ interface Readiness {
 export function recordingReadiness(r: RecordingDTO): Readiness {
   if (r.status === 'RECORDING')
     return { ready: false, label: 'در حال ضبط', tone: 'record', reason: 'ضبط هنوز تمام نشده است.' };
-  if (r.segmentCount === 0) return { ready: false, label: 'بدون صدا', tone: 'neutral', reason: 'هنوز هیچ بخشی از این ضبط به سرور نرسیده.' };
+  if (r.segmentCount === 0) return { ready: false, label: 'بدون صدا', tone: 'neutral', reason: 'هنوز هیچ بخشی از این ضبط به فضای ابری نرسیده.' };
   if (r.failedCount > 0)
     return {
       ready: false,

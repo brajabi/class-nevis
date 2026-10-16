@@ -115,7 +115,7 @@ export function PlayerBar({ tracks, disabledReason }: { tracks: PlayerTrack[]; d
           <View style={styles.rowBetween}>
             <Text variant="label">
               بخش {toFa(track?.index != null ? track.index + 1 : 1)} از {toFa(tracks.length)}
-              {track && !track.local ? '  ·  از سرور' : ''}
+              {track && !track.local ? '  ·  از فضای ابری' : ''}
             </Text>
             <Text variant="caption" color={colors.textMuted}>
               {formatDuration(offsetMs + pos * 1000)} / {formatDuration(totalMs)}

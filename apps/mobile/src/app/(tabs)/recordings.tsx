@@ -53,7 +53,7 @@ export default function RecordingsScreen() {
       setServer(list);
       setServerError(null);
     } catch (e) {
-      setServerError(e instanceof Error ? e.message : 'خطا در اتصال به سرور');
+      setServerError(e instanceof Error ? e.message : 'اتصال برقرار نشد');
     }
   }, []);
 
@@ -116,7 +116,7 @@ export default function RecordingsScreen() {
               <Animated.View entering={FadeInDown} style={[styles.h, styles.offline]}>
                 <Ionicons name="cloud-offline-outline" size={18} color={colors.warning} />
                 <Text variant="caption" color={colors.warning} style={{ flex: 1 }}>
-                  سرور در دسترس نیست؛ ضبط‌های روی گوشی نمایش داده می‌شوند و بعداً خودکار آپلود می‌شوند.
+                  اتصال برقرار نیست؛ ضبط‌های روی گوشی نمایش داده می‌شوند و بعداً خودکار آپلود می‌شوند.
                 </Text>
               </Animated.View>
             ) : null}
