@@ -1,0 +1,77 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RecordingStatus {
+  RECORDING
+  COMPLETE
+  INTERRUPTED
+}
+
+enum TranscriptStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model Recording {
+  // شناسه توسط اپ ساخته می‌شود تا آپلود‌ها idempotent باشند
+  id         String          @id
+  title      String
+  status     RecordingStatus @default(RECORDING)
+  startedAt  DateTime
+  endedAt    DateTime?
+  durationMs Int             @default(0)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  segments   Segment[]
+  notes      NoteRecording[]
+}
+
+model Segment {
+  id               String           @id @default(cuid())
+  recordingId      String
+  recording        Recording        @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  index            Int
+  filePath         String
+  mimeType         String
+  format           String
+  sizeBytes        Int
+  durationMs       Int              @default(0)
+  transcriptStatus TranscriptStatus @default(PENDING)
+  transcript       String?
+  error            String?
+  attempts         Int              @default(0)
+  transcribeModel  String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([recordingId, index])
+  @@index([transcriptStatus])
+}
+
+model Note {
+  id          String          @id @default(cuid())
+  title       String
+  contentHtml String          @default("")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  recordings  NoteRecording[]
+}
+
+model NoteRecording {
+  noteId      String
+  recordingId String
+  addedAt     DateTime  @default(now())
+  note        Note      @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, recordingId])
+}

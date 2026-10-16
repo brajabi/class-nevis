@@ -1,0 +1,11 @@
+{
+  "name": "classnevis",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev:api": "bun --cwd apps/api run dev",
+    "dev:mobile": "bun --cwd apps/mobile run start",
+    "db:migrate": "bun --cwd apps/api run db:migrate",
+    "typecheck": "bun --cwd apps/api run typecheck && bun --cwd apps/mobile run typecheck"
+  }
+}
