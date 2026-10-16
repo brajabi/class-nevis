@@ -13,6 +13,9 @@ const KEY = 'classnevis.settings.v1';
 
 /** In development, the API runs on the same machine as Metro, so reuse Metro's host. */
 function defaultServerUrl() {
+  // set at build time for release APKs, e.g. EXPO_PUBLIC_API_URL=http://192.168.1.10:4000
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
+  if (fromEnv) return fromEnv;
   const host = Constants.expoConfig?.hostUri?.split(':')[0];
   if (__DEV__ && host) return `http://${host}:4000`;
   return Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000';
