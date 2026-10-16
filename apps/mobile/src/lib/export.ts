@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { Platform, Share } from 'react-native';
 
 import { NOTE_CONTENT_CSS, vazirFontFaceCss } from '@/components/editor/editorHtml';
-import { formatDate, htmlToPlainText } from '@/lib/format';
+import { formatJalaliDate, formatTime, htmlToPlainText } from '@/lib/format';
 
 export interface ExportableNote {
   title: string;
@@ -33,7 +33,7 @@ export function sanitizeFileName(title: string, ext = 'pdf') {
 /** A4, RTL print document for a note. */
 export function buildPrintHtml(note: ExportableNote) {
   const title = escapeHtml(note.title || 'جزوه بدون عنوان');
-  const date = note.updatedAt ? escapeHtml(formatDate(note.updatedAt)) : '';
+  const date = note.updatedAt ? escapeHtml(`${formatJalaliDate(note.updatedAt)}، ${formatTime(note.updatedAt)}`) : '';
   return `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
 <head>

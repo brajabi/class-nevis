@@ -7,6 +7,7 @@ import { formatDate, formatDuration } from '@/lib/format';
 import { colors, gradients, radius, space } from '@/theme';
 
 import type { BadgeSpec } from './badges';
+import { TagChip } from './Tags';
 
 export function RecordingCard({
   title,
@@ -16,6 +17,7 @@ export function RecordingCard({
   onPress,
   index = 0,
   live = false,
+  tags = [],
 }: {
   title: string;
   startedAt: string;
@@ -24,6 +26,7 @@ export function RecordingCard({
   onPress: () => void;
   index?: number;
   live?: boolean;
+  tags?: string[];
 }) {
   return (
     <Tap onPress={onPress}>
@@ -54,8 +57,11 @@ export function RecordingCard({
           </View>
           <Ionicons name="chevron-back" size={18} color={colors.textFaint} />
         </View>
-        {badges.length > 0 ? (
+        {badges.length > 0 || tags.length > 0 ? (
           <View style={styles.badges}>
+            {tags.map((t) => (
+              <TagChip key={`tag:${t}`} label={t} icon="pricetag" size="sm" selected />
+            ))}
             {badges.map((b) => (
               <Badge key={b.label} label={b.label} tone={b.tone} icon={b.icon} />
             ))}

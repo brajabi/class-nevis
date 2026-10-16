@@ -43,6 +43,16 @@ function headerModel(headers: Record<string, string | undefined>, name: string):
   return v ? v : undefined;
 }
 
+/** Trim, drop empties/duplicates, cap length and count. */
+function cleanTags(tags: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of tags) {
+    const tag = raw.replace(/\s+/g, " ").trim().slice(0, 40);
+    if (tag && !out.includes(tag)) out.push(tag);
+  }
+  return out.slice(0, 20);
+}
+
 export const recordingsRoutes = new Elysia({ prefix: "/recordings" })
   .get("/", async () => {
     const rs = await prisma.recording.findMany({ include: recordingInclude, orderBy: { startedAt: "desc" } });
@@ -55,14 +65,15 @@ export const recordingsRoutes = new Elysia({ prefix: "/recordings" })
       checkId(id);
       const startedAt = parseDate(body.startedAt, "startedAt");
       const title = body.title.trim() || DEFAULT_TITLE;
+      const tags = body.tags === undefined ? undefined : cleanTags(body.tags);
       await prisma.recording.upsert({
         where: { id },
-        create: { id, title, startedAt },
-        update: { title, startedAt },
+        create: { id, title, startedAt, tags: tags ?? [] },
+        update: { title, startedAt, ...(tags ? { tags } : {}) },
       });
       return recordingDTO(await loadRecording(id));
     },
-    { body: t.Object({ title: t.String(), startedAt: t.String() }) },
+    { body: t.Object({ title: t.String(), startedAt: t.String(), tags: t.Optional(t.Array(t.String())) }) },
   )
 
   .patch(
@@ -72,6 +83,7 @@ export const recordingsRoutes = new Elysia({ prefix: "/recordings" })
       const data: Prisma.RecordingUpdateInput = {};
       if (body.title !== undefined) data.title = body.title.trim() || DEFAULT_TITLE;
       if (body.status !== undefined) data.status = body.status;
+      if (body.tags !== undefined) data.tags = cleanTags(body.tags);
       if (body.endedAt !== undefined) data.endedAt = body.endedAt === null ? null : parseDate(body.endedAt, "endedAt");
       try {
         await prisma.recording.update({ where: { id }, data });
@@ -84,6 +96,7 @@ export const recordingsRoutes = new Elysia({ prefix: "/recordings" })
     {
       body: t.Object({
         title: t.Optional(t.String()),
+        tags: t.Optional(t.Array(t.String())),
         status: t.Optional(RecordingStatus),
         endedAt: t.Optional(t.Nullable(t.String())),
       }),

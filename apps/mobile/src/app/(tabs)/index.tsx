@@ -21,13 +21,22 @@ import {
   RecordingCard,
   RenameSheet,
   SyncBadge,
+  TagPicker,
   Waveform,
   recordingBadges,
   useLiveLevel,
 } from '@/components/recording';
-import { Button, Card, Header, IconButton, Screen, Text, inputStyle } from '@/components/ui';
+import { Sheet } from '@/components/notes';
+import { Badge, Button, Card, Header, IconButton, Screen, Tap, Text, inputStyle } from '@/components/ui';
 import { formatDuration, toFa } from '@/lib/format';
-import { defaultRecordingTitle, recordingDurationMs, useClassRecorder, useLocalRecordings } from '@/lib/recorder';
+import {
+  defaultRecordingTitle,
+  recordingDurationMs,
+  setLocalRecordingTags,
+  useAllTags,
+  useClassRecorder,
+  useLocalRecordings,
+} from '@/lib/recorder';
 import { colors, fonts, radius, space } from '@/theme';
 
 function LiveDot({ on }: { on: boolean }) {
@@ -68,8 +77,12 @@ export default function RecordScreen() {
   const rec = useClassRecorder();
   const recordings = useLocalRecordings();
   const [draftTitle, setDraftTitle] = useState('');
+  // sticky between recordings: consecutive classes are usually the same course
+  const [draftTags, setDraftTags] = useState<string[]>([]);
+  const allTags = useAllTags();
   const [renaming, setRenaming] = useState(false);
   const [justSaved, setJustSaved] = useState<string | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
   const { level, history } = useLiveLevel(rec.phase === 'recording');
 
   const active = rec.isActive;
@@ -84,7 +97,7 @@ export default function RecordScreen() {
   const onMainPress = async () => {
     if (rec.phase === 'idle') {
       setJustSaved(null);
-      const ok = await rec.start(draftTitle);
+      const ok = await rec.start(draftTitle, draftTags);
       if (ok) setDraftTitle('');
     } else if (rec.phase === 'recording') await rec.pause();
     else if (rec.phase === 'paused') await rec.resume();
@@ -119,7 +132,11 @@ export default function RecordScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Header title="ضبط کلاس" subtitle="صدای کلاس را ضبط کنید، جزوه تحویل بگیرید" />
+        <Header
+          title="ضبط کلاس"
+          subtitle="صدای کلاس را ضبط کنید، جزوه تحویل بگیرید"
+          right={<IconButton icon="information-circle-outline" onPress={() => setInfoOpen(true)} />}
+        />
 
         {/* title */}
         <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.section}>
@@ -146,6 +163,18 @@ export default function RecordScreen() {
               returnKeyType="done"
             />
           )}
+        </Animated.View>
+
+        {/* tags: for a new recording, or the one being recorded */}
+        <Animated.View entering={FadeInDown.delay(120).duration(400)}>
+          <TagPicker
+            selected={active ? (activeLocal?.tags ?? []) : draftTags}
+            allTags={allTags}
+            onChange={(tags) => {
+              if (active && rec.recordingId) void setLocalRecordingTags(rec.recordingId, tags);
+              else setDraftTags(tags);
+            }}
+          />
         </Animated.View>
 
         {/* main control */}
@@ -182,6 +211,21 @@ export default function RecordScreen() {
           </Animated.View>
         ) : null}
 
+        {/* compact status: details live in the info sheet */}
+        <Animated.View entering={FadeInDown.delay(160).duration(450)} layout={LinearTransition}>
+          <Tap onPress={() => setInfoOpen(true)} style={styles.chips}>
+            <SyncBadge />
+            {active ? (
+              <Badge
+                label={rec.savedSegments > 0 ? `بخش ${toFa(rec.savedSegments)} ذخیره شد` : 'بخش اول در حال ضبط'}
+                tone="primary"
+                icon="save-outline"
+              />
+            ) : null}
+            {active && !rec.backgroundRecording ? <Badge label="برنامه را باز نگه دارید" tone="warning" icon="alert-circle-outline" /> : null}
+          </Tap>
+        </Animated.View>
+
         {rec.error ? (
           <Animated.View entering={FadeInDown} exiting={FadeOut} style={styles.errorBox}>
             <Ionicons name="warning" size={18} color={colors.warning} />
@@ -191,48 +235,6 @@ export default function RecordScreen() {
             <IconButton icon="close" size={30} onPress={rec.clearError} />
           </Animated.View>
         ) : null}
-
-        {/* safety status */}
-        <Animated.View entering={FadeInDown.delay(160).duration(450)} layout={LinearTransition} style={styles.h}>
-          <Card style={{ gap: space.md }}>
-            <View style={styles.statusRow}>
-              <View style={styles.statusIcon}>
-                <Ionicons name="shield-checkmark" size={20} color={colors.success} />
-              </View>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text variant="heading" style={{ fontSize: 15 }}>
-                  {active
-                    ? rec.savedSegments > 0
-                      ? `بخش ${toFa(rec.savedSegments)} ذخیره شد`
-                      : 'بخش اول در حال ضبط است'
-                    : 'صدای شما روی همین گوشی امن است'}
-                </Text>
-                <Text variant="caption" color={colors.textMuted}>
-                  {active
-                    ? `در حال ضبط بخش ${toFa(rec.segmentIndex + 1)} · هر بخش حداکثر ۲ دقیقه`
-                    : 'هر ضبط تا وقتی خودتان پاکش نکنید روی گوشی می‌ماند.'}
-                </Text>
-              </View>
-            </View>
-            <SyncBadge />
-            {active && activeLocal ? (
-              <Text variant="caption" color={colors.textFaint}>
-                {toFa(activeLocal.segments.filter((s) => s.uploaded).length)} بخش از این کلاس به سرور رسیده است.
-              </Text>
-            ) : null}
-            <Text variant="caption" color={colors.textMuted}>
-              صدا لحظه‌به‌لحظه روی حافظه گوشی نوشته می‌شود؛ قطع اینترنت، بسته شدن برنامه یا تمام شدن شارژ باعث از دست رفتن بخش‌های ذخیره‌شده نمی‌شود.
-            </Text>
-            {active && !rec.backgroundRecording ? (
-              <View style={styles.warnInline}>
-                <Ionicons name="information-circle" size={16} color={colors.warning} />
-                <Text variant="caption" color={colors.warning} style={{ flex: 1 }}>
-                  ضبط در پس‌زمینه در این نسخه در دسترس نیست؛ لطفاً برنامه را باز نگه دارید.
-                </Text>
-              </View>
-            ) : null}
-          </Card>
-        </Animated.View>
 
         {justSaved && !active ? (
           <Animated.View entering={FadeInDown.springify().damping(18)} exiting={FadeOut} style={styles.h}>
@@ -253,29 +255,12 @@ export default function RecordScreen() {
 
         {!active ? (
           <>
-            <Animated.View entering={FadeInDown.delay(240).duration(450)} style={styles.h}>
-              <Card style={{ gap: space.md }}>
-                <View style={styles.statusRow}>
-                  <Ionicons name="bulb" size={18} color={colors.accent} />
-                  <Text variant="heading" style={{ fontSize: 15 }}>
-                    چند نکته برای ضبط بهتر
-                  </Text>
-                </View>
-                {TIPS.map((t) => (
-                  <View key={t.text} style={styles.tip}>
-                    <Ionicons name={t.icon} size={16} color={colors.textMuted} style={{ marginTop: 3 }} />
-                    <Text variant="caption" color={colors.textMuted} style={{ flex: 1, lineHeight: 20 }}>
-                      {t.text}
-                    </Text>
-                  </View>
-                ))}
-              </Card>
-            </Animated.View>
-
             {recent.length > 0 ? (
               <View style={[styles.h, { gap: space.md }]}>
                 <View style={styles.sectionHead}>
-                  <Text variant="heading">ضبط‌های اخیر</Text>
+                  <Text variant="heading" numberOfLines={1}>
+                    ضبط‌های اخیر
+                  </Text>
                   <Button title="همه" size="sm" variant="ghost" onPress={() => router.push('/recordings')} />
                 </View>
                 {recent.map((r, i) => (
@@ -283,6 +268,7 @@ export default function RecordScreen() {
                     key={r.id}
                     index={i}
                     title={r.title}
+                    tags={r.tags}
                     startedAt={r.startedAt}
                     durationMs={recordingDurationMs(r)}
                     badges={recordingBadges(r, undefined, false)}
@@ -294,6 +280,55 @@ export default function RecordScreen() {
           </>
         ) : null}
       </ScrollView>
+
+      <Sheet visible={infoOpen} onClose={() => setInfoOpen(false)} title="راهنمای ضبط" subtitle="صداهای شما چطور امن می‌مانند" scroll>
+        <View style={styles.infoBlock}>
+          <View style={styles.statusRow}>
+            <View style={styles.statusIcon}>
+              <Ionicons name="shield-checkmark" size={20} color={colors.success} />
+            </View>
+            <Text variant="heading" style={{ flex: 1, fontSize: 15 }}>
+              صدای شما روی همین گوشی امن است
+            </Text>
+          </View>
+          <Text variant="caption" color={colors.textMuted} style={{ lineHeight: 21 }}>
+            صدا لحظه‌به‌لحظه روی حافظه گوشی نوشته می‌شود و هر ضبط تا وقتی خودتان پاکش نکنید روی گوشی می‌ماند. قطع اینترنت، بسته شدن
+            برنامه یا تمام شدن شارژ باعث از دست رفتن بخش‌های ذخیره‌شده نمی‌شود.
+          </Text>
+          <SyncBadge />
+          {active ? (
+            <Text variant="caption" color={colors.textFaint}>
+              {`در حال ضبط بخش ${toFa(rec.segmentIndex + 1)} · هر بخش حداکثر ۲ دقیقه`}
+              {activeLocal ? ` · ${toFa(activeLocal.segments.filter((s) => s.uploaded).length)} بخش به سرور رسیده` : ''}
+            </Text>
+          ) : null}
+          {active && !rec.backgroundRecording ? (
+            <View style={styles.warnInline}>
+              <Ionicons name="information-circle" size={16} color={colors.warning} />
+              <Text variant="caption" color={colors.warning} style={{ flex: 1 }}>
+                ضبط در پس‌زمینه در این نسخه در دسترس نیست؛ لطفاً برنامه را باز نگه دارید.
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.infoBlock}>
+          <View style={styles.statusRow}>
+            <Ionicons name="bulb" size={18} color={colors.accent} />
+            <Text variant="heading" style={{ fontSize: 15 }}>
+              چند نکته برای ضبط بهتر
+            </Text>
+          </View>
+          {TIPS.map((t) => (
+            <View key={t.text} style={styles.tip}>
+              <Ionicons name={t.icon} size={16} color={colors.textMuted} style={{ marginTop: 3 }} />
+              <Text variant="caption" color={colors.textMuted} style={{ flex: 1, lineHeight: 20 }}>
+                {t.text}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </Sheet>
 
       <RenameSheet visible={renaming} initial={rec.title} onClose={() => setRenaming(false)} onSave={(t) => rec.rename(t)} title="عنوان این ضبط" />
     </Screen>
@@ -354,4 +389,13 @@ const styles = StyleSheet.create({
   tip: { flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   h: { marginHorizontal: space.xl },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, paddingHorizontal: space.xl },
+  infoBlock: {
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
 });

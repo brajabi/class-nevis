@@ -9,3 +9,4 @@ export { TranscriptList } from './TranscriptList';
 export { useLiveLevel, WAVE_BARS } from './useLiveLevel';
 export { Waveform } from './Waveform';
 export { WritingOverlay } from './WritingOverlay';
+export { TagChip, TagFilter, TagList, TagPicker } from './Tags';

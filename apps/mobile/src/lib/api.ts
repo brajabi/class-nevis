@@ -75,9 +75,9 @@ export const api = {
   health: () => request<{ ok: true; openrouterConfigured: boolean }>('/health', {}, 6000),
   models: () => request<ModelDTO[]>('/models'),
 
-  upsertRecording: (id: string, body: { title: string; startedAt: string }) =>
+  upsertRecording: (id: string, body: { title: string; startedAt: string; tags?: string[] }) =>
     request<RecordingDTO>(`/recordings/${id}`, { method: 'PUT', body: json(body) }),
-  patchRecording: (id: string, body: { title?: string; status?: RecordingStatus; endedAt?: string }) =>
+  patchRecording: (id: string, body: { title?: string; tags?: string[]; status?: RecordingStatus; endedAt?: string }) =>
     request<RecordingDTO>(`/recordings/${id}`, { method: 'PATCH', body: json(body) }),
   uploadSegment: (id: string, index: number, durationMs: number, file: { uri: string; name: string; type: string }) => {
     const form = new FormData();

@@ -118,7 +118,7 @@ function errMessage(e: unknown) {
 
 async function ensureServerRecording(r: LocalRecording) {
   if (r.serverCreated) return;
-  await api.upsertRecording(r.id, { title: r.title, startedAt: r.startedAt });
+  await api.upsertRecording(r.id, { title: r.title, startedAt: r.startedAt, tags: r.tags ?? [] });
   setStatus({ serverReachable: true });
   await markServerCreated(r.id);
 }
@@ -151,7 +151,7 @@ async function syncRecording(id: string) {
   const allUploaded = r.segments.every((s) => s.uploaded);
   if (finished && !allUploaded) return;
   const rev = r.rev;
-  const body: { title: string; status?: RecordingStatus; endedAt?: string } = { title: r.title };
+  const body: { title: string; tags: string[]; status?: RecordingStatus; endedAt?: string } = { title: r.title, tags: r.tags ?? [] };
   if (finished) {
     body.status = r.status === 'interrupted' ? 'INTERRUPTED' : 'COMPLETE';
     if (r.endedAt) body.endedAt = r.endedAt;

@@ -10,7 +10,7 @@ type TranscriptStatus = "PENDING" | "PROCESSING" | "DONE" | "FAILED";
 type RecordingStatus = "RECORDING" | "COMPLETE" | "INTERRUPTED";
 interface SegmentDTO { id: string; index: number; durationMs: number; sizeBytes: number; format: string;
   transcriptStatus: TranscriptStatus; transcript: string | null; error: string | null; }
-interface RecordingDTO { id: string; title: string; status: RecordingStatus; startedAt: string; endedAt: string | null;
+interface RecordingDTO { id: string; title: string; tags: string[]; status: RecordingStatus; startedAt: string; endedAt: string | null;
   durationMs: number; createdAt: string; segmentCount: number; transcribedCount: number; failedCount: number;
   noteIds: string[]; }
 interface RecordingDetailDTO extends RecordingDTO { segments: SegmentDTO[]; transcript: string; } // transcript = DONE segments joined in order with "\n\n"
@@ -22,8 +22,8 @@ interface ModelDTO { id: string; name: string; audio: boolean; stt: boolean /* s
 ## Endpoints
 - `GET /health` → `{ ok: true, openrouterConfigured: boolean }`
 - `GET /models` → `ModelDTO[]` (cached from OpenRouter; speech-to-text models first, then audio-capable chat models; default transcription model `elevenlabs/scribe-v2`, notes `google/gemini-3.8-flash`)
-- `PUT /recordings/:id` body `{ title: string; startedAt: string }` → `RecordingDTO` (idempotent upsert; id is client UUID)
-- `PATCH /recordings/:id` body `{ title?: string; status?: RecordingStatus; endedAt?: string }` → `RecordingDTO`
+- `PUT /recordings/:id` body `{ title: string; startedAt: string; tags?: string[] }` → `RecordingDTO` (idempotent upsert; id is client UUID)
+- `PATCH /recordings/:id` body `{ title?: string; tags?: string[]; status?: RecordingStatus; endedAt?: string }` → `RecordingDTO`
 - `POST /recordings/:id/segments` multipart: `index` (int), `durationMs` (int), `file` (audio blob). Idempotent on (id,index): re-upload of existing index returns existing segment with 200. If recording row does not exist, it is auto-created (title "ضبط بدون عنوان"). Saves file to disk, queues transcription. → `SegmentDTO`
 - `GET /recordings` → `RecordingDTO[]` newest first
 - `GET /recordings/:id` → `RecordingDetailDTO`

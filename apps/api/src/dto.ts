@@ -34,6 +34,7 @@ export function recordingDTO(r: RecordingFull) {
   return {
     id: r.id,
     title: r.title,
+    tags: r.tags,
     status: r.status,
     startedAt: r.startedAt.toISOString(),
     endedAt: iso(r.endedAt),

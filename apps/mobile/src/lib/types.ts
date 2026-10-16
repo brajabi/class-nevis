@@ -16,6 +16,7 @@ export interface SegmentDTO {
 export interface RecordingDTO {
   id: string;
   title: string;
+  tags: string[];
   status: RecordingStatus;
   startedAt: string;
   endedAt: string | null;

@@ -25,12 +25,13 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Alert, AppState, Linking, Platform } from 'react-native';
 
-import { formatDate } from '@/lib/format';
+import { formatJalaliDate, formatTime } from '@/lib/format';
 
 import { estimateDurationMs, MIN_FREE_BYTES, recordingOptions, SEGMENT_MS } from './constants';
 import { baseName, fileStat, listFiles, moveToFinal, recorderFileName, recorderTempDirs } from './paths';
 import {
   createLocalRecording,
+  normalizeTags,
   getActiveSession,
   getLocalRecording,
   patchActiveSession,
@@ -417,10 +418,10 @@ function hasEnoughSpace(): boolean {
 
 // ---------- public API ----------
 export function defaultRecordingTitle(date = new Date()) {
-  return `کلاس ${formatDate(date.toISOString())}`;
+  return `کلاس ${formatJalaliDate(date)}، ${formatTime(date)}`;
 }
 
-export function startRecording(title?: string): Promise<boolean> {
+export function startRecording(title?: string, tags: string[] = []): Promise<boolean> {
   return exclusive(async () => {
     if (state.phase !== 'idle') return false;
     setState({ ...idleState, phase: 'starting', backgroundRecording: useBackground });
@@ -439,7 +440,7 @@ export function startRecording(title?: string): Promise<boolean> {
       const now = new Date();
       const id = Crypto.randomUUID();
       const t = title?.trim() || defaultRecordingTitle(now);
-      await createLocalRecording({ id, title: t, startedAt: now.toISOString() });
+      await createLocalRecording({ id, title: t, startedAt: now.toISOString(), tags: normalizeTags(tags) });
       setState({ recordingId: id, title: t, startedAt: now.toISOString() });
       await applyAudioMode(true);
       activateKeepAwakeAsync('classnevis-recording').catch(() => {});
@@ -574,7 +575,7 @@ AppState.addEventListener('change', (s) => {
 export interface ClassRecorder extends RecorderState {
   elapsedMs: number;
   isActive: boolean;
-  start: (title?: string) => Promise<boolean>;
+  start: (title?: string, tags?: string[]) => Promise<boolean>;
   pause: () => Promise<void>;
   resume: () => Promise<void>;
   stop: () => Promise<string | null>;

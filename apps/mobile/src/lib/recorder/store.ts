@@ -9,7 +9,7 @@
  * - Audio files are NEVER deleted here except by an explicit user delete.
  */
 import { File } from 'expo-file-system';
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 
 import { appDir, ensureDir, listFiles, recorderTempDirs, recordingDir, RECORDER_FILE_RE } from './paths';
 
@@ -36,6 +36,8 @@ export interface LocalSegment {
 export interface LocalRecording {
   id: string;
   title: string;
+  /** user labels, e.g. the course name; missing on recordings made before tags existed */
+  tags?: string[];
   startedAt: string;
   endedAt?: string;
   status: LocalRecordingStatus;
@@ -207,10 +209,18 @@ function withRecording(id: string, fn: (r: LocalRecording) => LocalRecording): P
   return commit({ ...manifest, recordings: { ...manifest.recordings, [id]: next } });
 }
 
-export function createLocalRecording(input: { id: string; title: string; startedAt: string; status?: LocalRecordingStatus; endedAt?: string }) {
+export function createLocalRecording(input: {
+  id: string;
+  title: string;
+  startedAt: string;
+  status?: LocalRecordingStatus;
+  endedAt?: string;
+  tags?: string[];
+}) {
   const r: LocalRecording = {
     id: input.id,
     title: input.title,
+    tags: input.tags ?? [],
     startedAt: input.startedAt,
     endedAt: input.endedAt,
     status: input.status ?? 'recording',
@@ -251,7 +261,7 @@ export function updateSegment(id: string, index: number, patch: Partial<LocalSeg
 }
 
 /** Changes that must reach the server bump `rev`. */
-export function updateRecordingMeta(id: string, patch: Partial<Pick<LocalRecording, 'title' | 'status' | 'endedAt'>>) {
+export function updateRecordingMeta(id: string, patch: Partial<Pick<LocalRecording, 'title' | 'status' | 'endedAt' | 'tags'>>) {
   const p = withRecording(id, (r) => ({ ...r, ...patch, rev: r.rev + 1 }));
   const r = manifest.recordings[id];
   if (r && patch.title !== undefined) writeMeta(r);
@@ -260,6 +270,19 @@ export function updateRecordingMeta(id: string, patch: Partial<Pick<LocalRecordi
 
 export function renameLocalRecording(id: string, title: string) {
   return updateRecordingMeta(id, { title });
+}
+
+export function normalizeTags(tags: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of tags) {
+    const tag = raw.replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (tag && !out.includes(tag)) out.push(tag);
+  }
+  return out.slice(0, 20);
+}
+
+export function setLocalRecordingTags(id: string, tags: string[]) {
+  return updateRecordingMeta(id, { tags: normalizeTags(tags) });
 }
 
 export function markServerCreated(id: string) {
@@ -337,6 +360,16 @@ export function useLocalRecording(id: string | undefined): LocalRecording | unde
 }
 
 // ---------- derived helpers ----------
+/** Every tag used on this phone, most used first. */
+export function useAllTags(): string[] {
+  const list = useLocalRecordings();
+  return useMemo(() => {
+    const count = new Map<string, number>();
+    for (const r of list) for (const t of r.tags ?? []) count.set(t, (count.get(t) ?? 0) + 1);
+    return [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fa')).map(([t]) => t);
+  }, [list]);
+}
+
 export const recordingDurationMs = (r: LocalRecording) => r.segments.reduce((a, s) => a + (s.durationMs || 0), 0);
 export const pendingSegments = (r: LocalRecording) => r.segments.filter((s) => !s.uploaded);
 export const recordingSizeBytes = (r: LocalRecording) => r.segments.reduce((a, s) => a + (s.sizeBytes || 0), 0);

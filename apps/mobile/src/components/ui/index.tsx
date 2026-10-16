@@ -46,7 +46,9 @@ export function Text({
   style,
   ...rest
 }: TextProps & { variant?: TextVariant; color?: string }) {
-  return <RNText {...rest} style={[type[variant], { color, writingDirection: 'rtl' }, style]} />;
+  // 'simple' line breaking avoids Android under-measuring Vazirmatn in RTL, which wrapped
+  // and clipped the last word of single-line labels.
+  return <RNText textBreakStrategy="simple" {...rest} style={[type[variant], { color, writingDirection: 'rtl' }, style]} />;
 }
 
 /** Full-screen background with a subtle gradient glow. */
@@ -150,7 +152,7 @@ export function Button({
       ) : (
         <>
           {icon ? <Ionicons name={icon} size={size === 'sm' ? 16 : 20} color={fg} /> : null}
-          <Text variant={size === 'sm' ? 'label' : 'heading'} color={fg} style={{ fontSize: size === 'sm' ? 13 : 15 }}>
+          <Text variant={size === 'sm' ? 'label' : 'heading'} color={fg} numberOfLines={1} style={{ fontSize: size === 'sm' ? 13 : 15 }}>
             {title}
           </Text>
         </>
@@ -178,7 +180,7 @@ export function Button({
           {variant === 'danger' ? (
             <View style={[styles.btnInner, { height: h, paddingHorizontal: 20 }]}>
               {icon ? <Ionicons name={icon} size={20} color={colors.danger} /> : null}
-              <Text variant="heading" color={colors.danger} style={{ fontSize: 15 }}>
+              <Text variant="heading" color={colors.danger} numberOfLines={1} style={{ fontSize: 15 }}>
                 {title}
               </Text>
             </View>
@@ -259,7 +261,7 @@ export function Badge({ label, tone = 'neutral', icon }: { label: string; tone?:
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
       {icon ? <Ionicons name={icon} size={12} color={fg} /> : null}
-      <Text variant="caption" color={fg} style={{ fontFamily: fonts.medium }}>
+      <Text variant="caption" color={fg} numberOfLines={1} style={{ fontFamily: fonts.medium }}>
         {label}
       </Text>
     </View>

@@ -9,6 +9,7 @@ import {
   NotePickerSheet,
   PlayerBar,
   RenameSheet,
+  TagPicker,
   TranscriptList,
   WritingOverlay,
   recordingBadges,
@@ -26,6 +27,8 @@ import {
   recordingSizeBytes,
   renameLocalRecording,
   requestSync,
+  setLocalRecordingTags,
+  useAllTags,
   useClassRecorder,
   useLocalRecording,
   useSyncStatus,
@@ -96,7 +99,27 @@ export default function RecordingDetailScreen() {
   for (const s of local?.segments ?? []) if (!s.pendingMove) trackMap.set(s.index, { index: s.index, uri: s.uri, durationMs: s.durationMs, local: true });
   const tracks = [...trackMap.values()].sort((a, b) => a.index - b.index);
 
+  const tags = local?.tags ?? detail?.tags ?? [];
+  const allTags = useAllTags();
+
   // ---------- actions ----------
+  const setTags = async (next: string[]) => {
+    if (local) {
+      await setLocalRecordingTags(id, next);
+      requestSync();
+    }
+    if (detail) {
+      setDetail({ ...detail, tags: next });
+      if (!local) {
+        try {
+          await api.patchRecording(id, { tags: next });
+        } catch (e) {
+          Alert.alert('خطا', e instanceof Error ? e.message : 'ذخیره برچسب‌ها ممکن نشد');
+        }
+      }
+    }
+  };
+
   const rename = async (t: string) => {
     if (local) {
       await renameLocalRecording(id, t);
@@ -294,6 +317,7 @@ export default function RecordingDetailScreen() {
             <Meta icon="layers-outline" text={`${toFa(segmentCount)} بخش`} />
             {local ? <Meta icon="phone-portrait-outline" text={formatBytes(recordingSizeBytes(local))} /> : null}
           </View>
+          <TagPicker selected={tags} allTags={allTags} onChange={setTags} inset={0} />
           {badges.length ? (
             <View style={styles.badges}>
               {badges.map((b) => (
