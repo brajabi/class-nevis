@@ -52,11 +52,15 @@ model Segment {
   error            String?
   attempts         Int              @default(0)
   transcribeModel  String?
+  /// copy in object storage (Cloudflare R2); null until replicated
+  remoteKey        String?
+  remoteAt         DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
   @@unique([recordingId, index])
   @@index([transcriptStatus])
+  @@index([remoteAt])
 }
 
 model Note {

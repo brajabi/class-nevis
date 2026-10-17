@@ -1,10 +1,11 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
-import { env, openrouterConfigured } from "./env.ts";
+import { env, objectStorageConfigured, openrouterConfigured } from "./env.ts";
 import { prisma } from "./db.ts";
 import { HttpError } from "./errors.ts";
 import { ensureStorage } from "./storage.ts";
 import { startWorker } from "./transcriber.ts";
+import { startReplicator } from "./replicator.ts";
 import { recordingsRoutes } from "./routes/recordings.ts";
 import { notesRoutes } from "./routes/notes.ts";
 import { modelsRoutes } from "./routes/models.ts";
@@ -64,7 +65,7 @@ export const app = new Elysia({
       }
     }
   })
-  .get("/health", () => ({ ok: true, openrouterConfigured: openrouterConfigured() }))
+  .get("/health", () => ({ ok: true, openrouterConfigured: openrouterConfigured(), objectStorage: objectStorageConfigured() }))
   .use(modelsRoutes)
   .use(recordingsRoutes)
   .use(notesRoutes);
@@ -76,6 +77,7 @@ async function main() {
   console.log(`🎙️  ClassNevis API on http://0.0.0.0:${env.PORT}  (storage: ${env.STORAGE_DIR})`);
   if (!openrouterConfigured()) console.warn("⚠️  OPENROUTER_API_KEY خالی است — رونویسی و تولید جزوه غیرفعال است.");
   await startWorker();
+  await startReplicator();
 }
 
 if (import.meta.main) {

@@ -3,6 +3,7 @@ import { prisma } from "./db.ts";
 import { env, openrouterConfigured } from "./env.ts";
 import { chatCompletion, isSttModel, speechToText, stripFences } from "./openrouter.ts";
 import { absPath } from "./storage.ts";
+import { ensureLocalFile } from "./replicator.ts";
 import { parseAdts, splitAdts } from "./adts.ts";
 
 /**
@@ -141,6 +142,7 @@ async function processSegment(id: string): Promise<void> {
   if (!seg) return;
   const model = seg.transcribeModel || env.TRANSCRIBE_MODEL;
   try {
+    if (!(await ensureLocalFile(seg))) throw new Error("فایل صوتی پیدا نشد");
     const bytes = await fs.readFile(absPath(seg.filePath));
     const prev = await prisma.segment.findUnique({
       where: { recordingId_index: { recordingId: seg.recordingId, index: seg.index - 1 } },

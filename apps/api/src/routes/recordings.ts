@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { prisma, Prisma } from "../db.ts";
 import { env } from "../env.ts";
 import { HttpError, notFound } from "../errors.ts";
+import { deleteRemoteFiles, enqueueReplication, ensureLocalFile } from "../replicator.ts";
 import { noteDTO, noteInclude, recordingDTO, recordingDetailDTO, recordingInclude, segmentDTO } from "../dto.ts";
 import {
   absPath,
@@ -107,8 +108,10 @@ export const recordingsRoutes = new Elysia({ prefix: "/recordings" })
 
   .delete("/:id", async ({ params: { id } }) => {
     checkId(id);
+    const segs = await prisma.segment.findMany({ where: { recordingId: id }, select: { filePath: true, remoteKey: true } });
     await prisma.recording.deleteMany({ where: { id } });
     await deleteRecordingFiles(id);
+    await deleteRemoteFiles(segs.map((s) => s.remoteKey ?? s.filePath.replace(/\\/g, "/")));
     console.log(`[recordings] deleted ${id} (server copy)`);
     return { ok: true };
   })
@@ -124,7 +127,8 @@ export const recordingsRoutes = new Elysia({ prefix: "/recordings" })
       const transcribeModel = headerModel(headers, "x-transcribe-model");
 
       const existing = await prisma.segment.findUnique({ where: { recordingId_index: { recordingId: id, index } } });
-      if (existing && (await fileExists(existing.filePath))) {
+      if (existing && (await ensureLocalFile(existing))) {
+        if (!existing.remoteAt) enqueueReplication(existing.id);
         return segmentDTO(existing); // idempotent
       }
 
@@ -186,6 +190,7 @@ export const recordingsRoutes = new Elysia({ prefix: "/recordings" })
       }
       console.log(`[segments] saved ${id}#${index} ${format} ${bytes.length}B ${durationMs}ms`);
       kick();
+      enqueueReplication(seg.id);
       return segmentDTO(seg);
     },
     {
@@ -202,8 +207,8 @@ export const recordingsRoutes = new Elysia({ prefix: "/recordings" })
     if (!Number.isInteger(index)) throw new HttpError(400, "index نامعتبر است");
     const seg = await prisma.segment.findUnique({ where: { recordingId_index: { recordingId: params.id, index } } });
     if (!seg) throw notFound("بخش");
+    if (!(await ensureLocalFile(seg))) throw new HttpError(404, "فایل صوتی پیدا نشد");
     const f = Bun.file(absPath(seg.filePath));
-    if (!(await f.exists())) throw new HttpError(404, "فایل صوتی روی سرور پیدا نشد");
     const size = f.size;
     const type = mimeForFormat(seg.format);
     const base = { "Content-Type": type, "Accept-Ranges": "bytes", "Cache-Control": "private, max-age=3600" };

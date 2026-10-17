@@ -20,7 +20,7 @@ interface ModelDTO { id: string; name: string; audio: boolean; stt: boolean /* s
 ```
 
 ## Endpoints
-- `GET /health` → `{ ok: true, openrouterConfigured: boolean }`
+- `GET /health` → `{ ok: true, openrouterConfigured: boolean, objectStorage: boolean }`
 - `GET /models` → `ModelDTO[]` (cached from OpenRouter; speech-to-text models first, then audio-capable chat models; default transcription model `elevenlabs/scribe-v2`, notes `google/gemini-3.8-flash`)
 - `PUT /recordings/:id` body `{ title: string; startedAt: string; tags?: string[] }` → `RecordingDTO` (idempotent upsert; id is client UUID)
 - `PATCH /recordings/:id` body `{ title?: string; tags?: string[]; status?: RecordingStatus; endedAt?: string }` → `RecordingDTO`
