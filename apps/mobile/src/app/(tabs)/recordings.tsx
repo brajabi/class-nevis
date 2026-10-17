@@ -8,7 +8,15 @@ import { RecordingCard, SyncBadge, TagFilter, recordingBadges } from '@/componen
 import { Button, EmptyState, Header, IconButton, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { toFa } from '@/lib/format';
-import { recordingDurationMs, requestSync, useClassRecorder, useLocalRecordings, type LocalRecording } from '@/lib/recorder';
+import {
+  importAudioFromPhone,
+  recordingDurationMs,
+  requestSync,
+  useClassRecorder,
+  useLocalRecordings,
+  type LocalRecording,
+} from '@/lib/recorder';
+import { showToast } from '@/components/notes';
 import type { RecordingDTO } from '@/lib/types';
 import { colors, radius, space, type } from '@/theme';
 
@@ -72,6 +80,31 @@ export default function RecordingsScreen() {
     setRefreshing(false);
   };
 
+  const [importing, setImporting] = useState(false);
+
+  const onImport = async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      // an active tag filter is applied to the imported files
+      const res = await importAudioFromPhone(tag ? [tag] : []);
+      if (!res) return;
+      if (res.imported.length === 1 && !res.failed.length) {
+        showToast('صوت اضافه شد و در حال ارسال است', 'success');
+        router.push(`/recording/${res.imported[0]}`);
+      } else if (res.imported.length) {
+        showToast(`${toFa(res.imported.length)} صوت اضافه شد${res.failed.length ? `؛ ${toFa(res.failed.length)} فایل خوانده نشد` : ''}`, 'success');
+      } else {
+        showToast('فایل انتخاب‌شده خوانده نشد', 'error');
+      }
+    } catch (e) {
+      showToast('افزودن صوت ممکن نشد', 'error');
+      console.warn('[import]', e);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const [query, setQuery] = useState('');
   const [tag, setTag] = useState<string | null>(null);
   const all = useMemo(() => merge(local, server), [local, server]);
@@ -93,7 +126,11 @@ export default function RecordingsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} progressBackgroundColor={colors.surface} />}
         ListHeaderComponent={
           <View style={{ gap: space.md, marginBottom: space.sm }}>
-            <Header title="ضبط‌ها" subtitle={all.length ? `${toFa(all.length)} ضبط` : undefined} />
+            <Header
+              title="ضبط‌ها"
+              subtitle={all.length ? `${toFa(all.length)} ضبط` : undefined}
+              right={<Button title="افزودن از گوشی" icon="add" size="sm" variant="secondary" loading={importing} onPress={onImport} />}
+            />
             {all.length ? (
               <View style={[styles.h, styles.search]}>
                 <Ionicons name="search" size={18} color={colors.textFaint} />
@@ -152,8 +189,13 @@ export default function RecordingsScreen() {
           <EmptyState
             icon="mic-outline"
             title="هنوز ضبطی ندارید"
-            subtitle="از تب «ضبط» اولین کلاس را ضبط کنید؛ همه‌چیز اینجا جمع می‌شود."
-            action={<Button title="شروع ضبط" icon="mic" variant="record" onPress={() => router.push('/')} />}
+            subtitle="کلاس را ضبط کنید یا صوتی را که قبلاً ضبط کرده‌اید از گوشی اضافه کنید."
+            action={
+              <View style={{ gap: space.sm, alignSelf: 'stretch' }}>
+                <Button title="شروع ضبط" icon="mic" variant="record" onPress={() => router.push('/')} />
+                <Button title="افزودن صوت از گوشی" icon="folder-open-outline" variant="secondary" loading={importing} onPress={onImport} />
+              </View>
+            }
           />
           )
         }

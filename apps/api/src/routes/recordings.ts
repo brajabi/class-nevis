@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { prisma, Prisma } from "../db.ts";
-import { env } from "../env.ts";
+import { env, objectStorage } from "../env.ts";
 import { HttpError, notFound } from "../errors.ts";
 import { deleteRemoteFiles, enqueueReplication, ensureLocalFile } from "../replicator.ts";
 import { noteDTO, noteInclude, recordingDTO, recordingDetailDTO, recordingInclude, segmentDTO } from "../dto.ts";
@@ -207,6 +207,13 @@ export const recordingsRoutes = new Elysia({ prefix: "/recordings" })
     if (!Number.isInteger(index)) throw new HttpError(400, "index نامعتبر است");
     const seg = await prisma.segment.findUnique({ where: { recordingId_index: { recordingId: params.id, index } } });
     if (!seg) throw notFound("بخش");
+    // Copied to object storage → let Cloudflare serve it (CDN, range requests); the server is the fallback.
+    if (seg.remoteAt && seg.remoteKey && objectStorage.publicUrl) {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `${objectStorage.publicUrl}/${seg.remoteKey.split("/").map(encodeURIComponent).join("/")}`, "Cache-Control": "private, max-age=300" },
+      });
+    }
     if (!(await ensureLocalFile(seg))) throw new HttpError(404, "فایل صوتی پیدا نشد");
     const f = Bun.file(absPath(seg.filePath));
     const size = f.size;

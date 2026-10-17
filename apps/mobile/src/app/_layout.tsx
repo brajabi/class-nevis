@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { ToastHost } from '@/components/notes';
 import { rtl } from '@/components/ui';
 import { bootRecordingSystem } from '@/lib/recorder/boot';
 import { loadSettings } from '@/lib/settings';
@@ -51,6 +52,8 @@ export default function RootLayout() {
           <Stack.Screen name="recording/[id]" />
           <Stack.Screen name="note/[id]" />
         </Stack>
+        {/* one app-wide toast, above every screen */}
+        <ToastHost />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

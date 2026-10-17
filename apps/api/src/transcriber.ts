@@ -4,6 +4,7 @@ import { env, openrouterConfigured } from "./env.ts";
 import { chatCompletion, isSttModel, speechToText, stripFences } from "./openrouter.ts";
 import { absPath } from "./storage.ts";
 import { ensureLocalFile } from "./replicator.ts";
+import { toAdts } from "./convert.ts";
 import { parseAdts, splitAdts } from "./adts.ts";
 
 /**
@@ -151,12 +152,22 @@ async function processSegment(id: string): Promise<void> {
     const prevText = prev?.transcriptStatus === "DONE" && prev.transcript ? prev.transcript.slice(-300) : "";
 
     const t0 = Date.now();
-    let chunks: Uint8Array[] = [bytes];
-    if (seg.format === "aac") {
-      const info = parseAdts(bytes);
+    // Imported files (mp3, m4a, ogg, ...) are converted to ADTS so they can be split like recordings.
+    let audio: Uint8Array = bytes;
+    let format = seg.format;
+    if (format !== "aac") {
+      const converted = await toAdts(bytes);
+      if (converted) {
+        audio = converted;
+        format = "aac";
+      }
+    }
+    let chunks: Uint8Array[] = [audio];
+    if (format === "aac") {
+      const info = parseAdts(audio);
       if (info.frames > 0) {
         await fixDuration(seg.id, seg.durationMs, info.durationMs);
-        if (info.durationMs > SPLIT_ABOVE_MS) chunks = splitAdts(bytes, info, CHUNK_MS);
+        if (info.durationMs > SPLIT_ABOVE_MS) chunks = splitAdts(audio, info, CHUNK_MS);
       }
     }
     if (chunks.length > 1) {
@@ -168,7 +179,7 @@ async function processSegment(id: string): Promise<void> {
     let context = prevText;
     if (done.length) context = done[done.length - 1]!.slice(-300) || context;
     for (let c = done.length; c < chunks.length; c++) {
-      const text = await transcribeChunk(chunks[c]!, seg.format, model, context);
+      const text = await transcribeChunk(chunks[c]!, format, model, context);
       done.push(text);
       partials.set(id, done);
       if (text) context = text.slice(-300);

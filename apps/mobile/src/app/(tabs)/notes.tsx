@@ -14,8 +14,7 @@ import {
   Sheet,
   SheetAction,
   showToast,
-  ToastHost,
-} from '@/components/notes';
+  } from '@/components/notes';
 import { Button, EmptyState, Header, IconButton, Screen, Tap, Text } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
 import { toFa } from '@/lib/format';
@@ -317,7 +316,6 @@ export default function NotesScreen() {
         </View>
       </Dialog>
 
-      <ToastHost />
     </Screen>
   );
 }

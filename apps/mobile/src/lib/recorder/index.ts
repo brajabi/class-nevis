@@ -1,4 +1,5 @@
 export { bootRecordingSystem } from './boot';
+export { importAudioFromPhone, type ImportResult } from './importAudio';
 export { SEGMENT_MS, mimeForUri } from './constants';
 export {
   defaultRecordingTitle,

@@ -3,6 +3,9 @@ FROM oven/bun:1.4.3
 
 WORKDIR /app
 
+# ffmpeg converts imported audio (mp3, m4a, ogg, ...) to AAC so long files can be chunked for transcription
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+
 # Install only the API's dependencies (not the whole Expo workspace).
 COPY apps/api/package.json ./
 RUN bun install

@@ -15,7 +15,8 @@ export const finalSegmentFile = (id: string, index: number, ext = SEGMENT_EXT) =
 /** Name the native recorder writes to (without extension): deterministic so a crash can be recovered. */
 export const recorderFileName = (id: string, index: number) => `${id}_${index}`;
 export const RECORDER_FILE_RE = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})_(\d+)\.(aac|m4a)$/i;
-export const FINAL_FILE_RE = /^(\d+)\.(aac|m4a)$/i;
+/** Final segment files, including audio imported from the phone in other formats. */
+export const FINAL_FILE_RE = /^(\d+)\.(aac|m4a|mp3|wav|ogg|oga|opus|flac|webm|amr|3gp|mp4|aiff?)$/i;
 
 /**
  * Where expo-audio writes while recording: `<document|cache>/Audio` on Android and

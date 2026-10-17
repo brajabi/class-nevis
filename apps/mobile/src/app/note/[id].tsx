@@ -14,7 +14,6 @@ import {
   Sheet,
   SheetAction,
   showToast,
-  ToastHost,
   type AttachMode,
 } from '@/components/notes';
 import { IconButton, Screen, Tap, Text, type IconName } from '@/components/ui';
@@ -395,7 +394,6 @@ export default function NoteEditorScreen() {
             </Animated.View>
           )}
         </View>
-        <ToastHost />
       </Screen>
     );
   }
@@ -588,7 +586,6 @@ export default function NoteEditorScreen() {
         ) : null}
       </Sheet>
 
-      <ToastHost />
     </Screen>
   );
 }

@@ -14,8 +14,26 @@ export const SAMPLE_RATE = 44_100;
  */
 export const SEGMENT_EXT = Platform.OS === 'ios' ? '.m4a' : '.aac';
 
+const MIME_BY_EXT: Record<string, string> = {
+  aac: 'audio/aac',
+  m4a: 'audio/mp4',
+  mp4: 'audio/mp4',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  oga: 'audio/ogg',
+  opus: 'audio/ogg',
+  flac: 'audio/flac',
+  webm: 'audio/webm',
+  amr: 'audio/amr',
+  '3gp': 'audio/3gpp',
+  aif: 'audio/aiff',
+  aiff: 'audio/aiff',
+};
+
 export function mimeForUri(uri: string): string {
-  return uri.toLowerCase().endsWith('.m4a') ? 'audio/mp4' : 'audio/aac';
+  const ext = uri.toLowerCase().split('?')[0]!.split('.').pop() ?? '';
+  return MIME_BY_EXT[ext] ?? 'audio/aac';
 }
 
 export function recordingOptions(fileName: string): RecordingOptions {

@@ -24,6 +24,8 @@ export const objectStorage = {
   secretAccessKey: (process.env.CF_SECRET_ACCESS_KEY ?? "").trim(),
   endpoint: (process.env.CF_R2_ENDPOINT || "https://c50c3b16d43904964c082e72dfbfde7b.r2.cloudflarestorage.com").trim(),
   bucket: (process.env.CF_R2_BUCKET || "classnevis").trim(),
+  /** public (custom-domain) address of the bucket, used for downloads */
+  publicUrl: (process.env.CF_R2_PUBLIC_URL || "https://cn.tarino.net").trim().replace(/\/+$/, ""),
 };
 
 export const objectStorageConfigured = () => !!(objectStorage.accessKeyId && objectStorage.secretAccessKey);
