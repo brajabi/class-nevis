@@ -100,8 +100,7 @@ async function claimNext(): Promise<{ id: string } | null> {
 
 /** رونویسی‌های تکه‌ای نیمه‌تمام: segmentId → متن تکه‌های انجام‌شده */
 const partials = new Map<string, string[]>();
-const SPLIT_ABOVE_MS = 5.5 * 60_000;
-const CHUNK_MS = 4.5 * 60_000;
+const CHUNK_MS = 2 * 60_000;
 
 async function transcribeChunk(audio: Uint8Array, format: string, model: string, context: string): Promise<string> {
   if (await isSttModel(model)) {
@@ -157,18 +156,17 @@ async function processSegment(id: string): Promise<void> {
     let format = seg.format;
     if (format !== "aac") {
       const converted = await toAdts(bytes);
-      if (converted) {
-        audio = converted;
-        format = "aac";
-      }
+      if (!converted) throw new Error("برای تبدیل و تقسیم فایل صوتی، ffmpeg باید روی سرور نصب باشد");
+      audio = converted;
+      format = "aac";
     }
     let chunks: Uint8Array[] = [audio];
     if (format === "aac") {
       const info = parseAdts(audio);
-      if (info.frames > 0) {
-        await fixDuration(seg.id, seg.durationMs, info.durationMs);
-        if (info.durationMs > SPLIT_ABOVE_MS) chunks = splitAdts(audio, info, CHUNK_MS);
-      }
+      if (info.frames === 0) throw new Error("فایل AAC فاقد فریم صوتی معتبر است");
+      await fixDuration(seg.id, seg.durationMs, info.durationMs);
+      // Leave ample room for base64 expansion and JSON under provider body limits.
+      chunks = splitAdts(audio, info, CHUNK_MS, 15_000, 8 * 1024 * 1024);
     }
     if (chunks.length > 1) {
       console.log(`[transcriber] ${seg.recordingId}#${seg.index}: long ADTS segment split into ${chunks.length} chunks`);

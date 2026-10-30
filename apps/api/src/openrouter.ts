@@ -189,10 +189,11 @@ const STT_PATTERN = /(^elevenlabs\/|whisper|scribe|transcribe|^deepgram\/|^assem
 
 /** Whether a model must be called through /audio/transcriptions. */
 export async function isSttModel(id: string): Promise<boolean> {
+  if (STT_PATTERN.test(id)) return true;
   try {
     await listSttModels();
   } catch {}
-  return sttCache?.ids.has(id) ?? STT_PATTERN.test(id);
+  return sttCache?.ids.has(id) ?? false;
 }
 
 let modelsCache: { at: number; data: ModelDTO[] } | null = null;

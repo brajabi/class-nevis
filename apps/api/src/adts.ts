@@ -61,20 +61,29 @@ export function parseAdts(b: Uint8Array): AdtsInfo {
  * تقسیم به تکه‌های حدوداً targetMs در مرز فریم‌ها. تکهٔ آخرِ خیلی کوتاه به تکهٔ قبلی می‌چسبد.
  * خروجی subarray است (کپی نمی‌شود و فایل اصلی دست نمی‌خورد).
  */
-export function splitAdts(b: Uint8Array, info: AdtsInfo, targetMs: number, minLastMs = 60_000): Uint8Array[] {
+export function splitAdts(b: Uint8Array, info: AdtsInfo, targetMs: number, minLastMs = 60_000, maxBytes = Infinity): Uint8Array[] {
   if (info.frames === 0) return [b];
   const ranges: { start: number; end: number; ms: number }[] = [];
   let startFrame = 0;
   let acc = 0;
+  let bytes = 0;
   for (let f = 0; f < info.frames; f++) {
+    if (bytes > 0 && bytes + info.lengths[f]! > maxBytes) {
+      ranges.push({ start: info.offsets[startFrame]!, end: info.offsets[f - 1]! + info.lengths[f - 1]!, ms: acc });
+      startFrame = f;
+      acc = 0;
+      bytes = 0;
+    }
     acc += info.frameMs[f]!;
+    bytes += info.lengths[f]!;
     if (acc >= targetMs || f === info.frames - 1) {
       ranges.push({ start: info.offsets[startFrame]!, end: info.offsets[f]! + info.lengths[f]!, ms: acc });
       startFrame = f + 1;
       acc = 0;
+      bytes = 0;
     }
   }
-  if (ranges.length > 1 && ranges[ranges.length - 1]!.ms < minLastMs) {
+  if (ranges.length > 1 && ranges[ranges.length - 1]!.ms < minLastMs && ranges[ranges.length - 1]!.end - ranges[ranges.length - 2]!.start <= maxBytes) {
     const last = ranges.pop()!;
     const prev = ranges[ranges.length - 1]!;
     prev.end = last.end;
